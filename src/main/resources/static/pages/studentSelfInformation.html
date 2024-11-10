@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>菏泽学院</title>
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/icon.css">
+    <script type="text/javascript" src="easyUI/jquery.min.js"></script>
+    <script type="text/javascript" src="easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="javascript/addressIP.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+    $(function () {
+        $('#pg').propertygrid({
+            showGroup: false,
+            scrollbarSize: 0
+        });
+        $('#pgtitle').propertygrid({
+            showGroup: false,
+            scrollbarSize: 0
+        });
+        userPojo = JSON.parse(localStorage.getItem("userEntity"));
+        var row = {
+            name:'姓名',
+            value:userPojo.name,
+            editor:'text'
+        };
+        $('#pg').propertygrid('appendRow',row);
+        row = {
+            name:'学工号',
+            value:userPojo.account
+        };
+        $('#pg').propertygrid('appendRow',row);
+        row = {
+            name:'二级学院',
+            value:userPojo.departName
+        };
+        $('#pg').propertygrid('appendRow',row);
+        row = {
+            name:'邮箱',
+            value:userPojo.email
+        };
+        $('#pg').propertygrid('appendRow',row);
+        row = {
+            name:'手机号',
+            value:userPojo.phone
+        };
+        $('#pg').propertygrid('appendRow',row);
+        if(localStorage.getItem("identity") == 1){
+            row = {
+                name:'职称/称号',
+                value:userPojo.protitle,
+                editor:'text'
+            };
+            $('#pg').propertygrid('appendRow',row);
+            row = {
+                name:'研究领域',
+                value:userPojo.direction,
+                editor:'text'
+            };
+            $('#pg').propertygrid('appendRow',row);
+        }else{
+            if(localStorage.getItem("checked") == "yes"){
+                var myselftitle = JSON.parse(localStorage.getItem("selfTitle"));
+                row = {
+                    name:'选题状态',
+                    value:'已选'
+                };
+                $('#pgtitle').propertygrid('appendRow',row);
+                row = {
+                    name:'题目编号',
+                    value:myselftitle.titleId
+                };
+                $('#pgtitle').propertygrid('appendRow',row);
+                row = {
+                    name:'选题名称',
+                    value:myselftitle.titleName
+                };
+                $('#pgtitle').propertygrid('appendRow',row);
+                row = {
+                    name:'开始时间',
+                    value:myselftitle.publishTime
+                };
+                $('#pgtitle').propertygrid('appendRow',row);
+                row = {
+                    name:'限制时间',
+                    value:myselftitle.limitTime
+                };
+                $('#pgtitle').propertygrid('appendRow',row);
+                row = {
+                    name:'题目要求',
+                    value:myselftitle.description
+                };
+                $('#pgtitle').propertygrid('appendRow',row);
+                row = {
+                    name:'指导教师',
+                    value:myselftitle.guideTeacher.name
+                };
+                $('#pgtitle').propertygrid('appendRow',row);
+                row = {
+                    name:'手机号',
+                    value:myselftitle.guideTeacher.phone
+                };
+                $('#pgtitle').propertygrid('appendRow',row);
+                row = {
+                    name:'电子邮箱',
+                    value:myselftitle.guideTeacher.email
+                };
+                $('#pgtitle').propertygrid('appendRow',row);
+                row = {
+                    name:'研究方向',
+                    value:myselftitle.guideTeacher.direction
+                };
+                $('#pgtitle').propertygrid('appendRow',row);
+            }else {
+                row = {
+                    name:'选题状态',
+                    value:'未选'
+                };
+                $('#pgtitle').propertygrid('appendRow',row);
+            }
+        }
+    });
+</script>
+<div class="easyui-panel" data-options="fit:true" style="width:100%;padding:1px;">
+    <div class="easyui-layout" data-options="fit:true">
+        <div data-options="region:'west',split:false" style="width:400px;padding:1px">
+            <table id="pg" class="easyui-propertygrid" style="width:397px">
+            </table>
+
+        </div>
+        <div data-options="region:'center'" style="padding:1px">
+            <table id="pgtitle" class="easyui-propertygrid" style="width:397px">
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>

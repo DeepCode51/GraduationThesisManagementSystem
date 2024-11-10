@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>菏泽学院</title>
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/icon.css">
+    <script type="text/javascript" src="easyUI/jquery.min.js"></script>
+    <script type="text/javascript" src="easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="javascript/addressIP.js"></script>
+    <script type="text/javascript" src="javascript/datagrid-filter.js"></script>
+</head>
+<body>
+<script>
+    $(function () {
+        var teacherloadpaperlisturl = ipAddress + "teacherRecordlist";
+        $.ajax({
+            type:'get',
+            dataType:'json',
+            url:teacherloadpaperlisturl,
+            beforeSend:function (request) {
+                request.setRequestHeader("token",localStorage.getItem("token"));
+            },
+            success:function (returndata) {
+                loadTeacherRecord(returndata);
+            },
+            error: function (e) {
+                errorHandle(e);
+            }
+        });
+    })
+
+    function loadTeacherRecord(loaddata) {
+        var dgrecord = $('#teacherJudgeRecord').datagrid({
+            data:loaddata,
+            striped: true,
+            border:false,
+            singleSelect:true,
+            idField: 'paperID',
+            fit:true,
+            fitColumns:true,
+            loadMsg:'^_^请稍等',
+            emptyMsg: '您还没有审批任何作品',
+            pagination:true,
+            pageSize: 10,
+            pageList: [10, 20, 30],
+            columns: [
+                [
+                    {
+                        field: 'paperID',
+                        title: '论文编号',
+                        width: '7%',
+                        align: 'center'
+                    },
+                    {
+                        field: 'submitStudent',
+                        title: '学生姓名',
+                        width: '8%',
+                        align: 'center',
+                        formatter: function(value,row,index) {
+                            if (row.submitStudent){
+                                return row.submitStudent.name;
+                            } else {
+                                return value;
+                            }
+                        }
+                    },
+                    {
+                        field: 'executePlan',
+                        title: '审批阶段',
+                        width: '11%',
+                        align: 'center',
+                        formatter: function(value,row,index) {
+                            if (row.executePlan){
+                                return "<span title='" + row.executePlan.content + "'>" + row.executePlan.content + "</span>";
+                            } else {
+                                return value;
+                            }
+                        }
+                    },
+                    {
+                        field: 'checkState',
+                        title: '审批状态',
+                        width: '9%',
+                        align: 'center',
+                        formatter: function(value,row,index) {
+                            if(row.checkState == 0){
+                                return '未审批';
+                            }else{
+                                return '已审批';
+                            }
+                        }
+                    },
+                    {
+                        field: 'studentWord',
+                        title: '学生[留言/简介]',
+                        width: '15%',
+                        align: 'center',
+                        formatter: function(value,row,index) {
+                            return "<span title='" + row.studentWord + "'>" + row.studentWord + "</span>";
+                        }
+                    },
+                    {
+                        field: 'teacherWord',
+                        title: '我的评语',
+                        width: '15%',
+                        align: 'center',
+                        formatter: function(value,row,index) {
+                            if(row.teacherWord && row.teacherWord.trim().length>0){
+                                return "<span title='" + row.teacherWord + "'>" + row.teacherWord + "</span>";
+                            }else{
+                                return '等待教师评审...'
+                            }
+
+                        }
+                    },
+                    {
+                        field: 'passState',
+                        title: '审批结果',
+                        width: '10%',
+                        align: 'center',
+                        formatter: function(value,row,index) {
+                            if(row.checkState == 0){
+                                return '等待教师审批...';
+                            }
+                            if(row.checkState == 1){
+                                if(row.passState == 0){
+                                    return '未通过';
+                                }else{
+                                    return '<span style="color:red;">('+"已通过"+')</span>';
+                                }
+                            }
+                        }
+                    },
+                    {
+                        field: 'submitTime',
+                        title: '提交时间',
+                        width: '13%',
+                        align: 'center'
+                    },
+                    {
+                        field: 'judgeTime',
+                        title: '审批时间',
+                        width: '13%',
+                        align: 'center',
+                        formatter: function(value,row,index) {
+                            if(row.checkState == 0){
+                                return '尚未审批';
+                            }else{
+                                return value;
+                            }
+                        }
+                    }
+                ]
+            ]
+        });
+        var fbutton = dgrecord.datagrid('getPager');
+        fbutton.pagination({
+            buttons: [{
+                iconCls: 'icon-search',
+                handler: function() {
+                    var selectedpaper = $('#teacherJudgeRecord').datagrid('getSelections');
+                    if(selectedpaper == null || selectedpaper.length == 0){
+                        $.messager.alert('提示', '请选择您要下载的作品', 'warning');
+                    }else {
+                        var getpowerurl = ipAddress + "teacherGetDownPower";
+                        $.ajax({
+                            type:'post',
+                            dataType:'json',
+                            url:getpowerurl,
+                            beforeSend:function (request) {
+                                request.setRequestHeader("token",localStorage.getItem("token"));
+                            },
+                            data:{
+                                paperID:selectedpaper[0].paperID
+                            },
+                            success:function (returndata) {
+                                if(returndata.state == 1){
+                                    var showu = ipAddress+"teacherDownloadRecord?account="+localStorage.getItem("userAccount")+"&paperID="+selectedpaper[0].paperID;
+                                    window.location.href=showu;
+                                }else {
+                                    $.messager.show({
+                                        title:'提示',
+                                        msg:data.message,
+                                        timeout:2000,
+                                        showType:'slide'
+                                    });
+                                }
+                                $('#teacherJudgeRecord').datagrid('unselectAll');
+                            },
+                            error:function (e) {
+                                $('#teacherJudgeRecord').datagrid('unselectAll');
+                                errorHandle(e);
+                            }
+                        });
+                    }
+                }
+            }]
+        });
+    }
+</script>
+<table id="teacherJudgeRecord" class="easyui-datagrid"></table>
+</body>
+</html>

@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>菏泽学院</title>
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/icon.css">
+    <script type="text/javascript" src="easyUI/jquery.min.js"></script>
+    <script type="text/javascript" src="easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="javascript/addressIP.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+    $(function () {
+        $('#pg').propertygrid({
+            showGroup: false,
+            onAfterEdit:function(index, row, changes){
+                if(changes.value){
+                    if(row.name == "姓名"){
+                        var changenameurl = ipAddress+"rename";
+                        $.ajax({
+                            type:'post',
+                            dataType:'json',
+                            url:changenameurl,
+                            beforeSend: function (request) {
+                                request.setRequestHeader("token", localStorage.getItem("token"));
+                            },
+                            data: {
+                                newname:changes.value
+                            },
+                            success:function (returndate) {
+                                if(returndate.state == 1){
+                                    $.messager.show({
+                                        title:'提示',
+                                        msg: '姓名信息修改成功,请刷新页面',
+                                        timeout:1600,
+                                        showType:'slide'
+                                    });
+                                }else{
+                                    $.messager.show({
+                                        title:'提示',
+                                        msg: returndate.message,
+                                        timeout:1600,
+                                        showType:'slide'
+                                    });
+                                }
+                            },
+                            error:function (e) {
+                                errorHandle(e);
+                            }
+                        });
+                    }
+                    if(row.name == "您对学生的要求"){
+                        var changequery = ipAddress+"reInformation";
+                        $.ajax({
+                            type:'post',
+                            dataType:'json',
+                            url:changequery,
+                            beforeSend: function (request) {
+                                request.setRequestHeader("token", localStorage.getItem("token"));
+                            },
+                            data: {
+                                content:changes.value
+                            },
+                            success:function (returndate) {
+                                if(returndate.state == 1){
+                                    $.messager.show({
+                                        title:'提示',
+                                        msg: '要求信息修改成功!',
+                                        timeout:1600,
+                                        showType:'slide'
+                                    });
+                                }else{
+                                    $.messager.show({
+                                        title:'提示',
+                                        msg: returndate.message,
+                                        timeout:1600,
+                                        showType:'slide'
+                                    });
+                                }
+                            },
+                            error:function (e) {
+                                errorHandle(e);
+                            }
+                        });
+                    }
+                }
+            },
+            scrollbarSize: 0
+        });
+        userPojo = JSON.parse(localStorage.getItem("userEntity"));
+        var row = {
+            name:'姓名',
+            value:userPojo.name,
+            editor:'text'
+        };
+        $('#pg').propertygrid('appendRow',row);
+        row = {
+            name:'学工号',
+            value:userPojo.account
+        };
+        $('#pg').propertygrid('appendRow',row);
+        row = {
+            name:'二级学院',
+            value:userPojo.departName
+        };
+        $('#pg').propertygrid('appendRow',row);
+        row = {
+            name:'邮箱',
+            value:userPojo.email
+        };
+        $('#pg').propertygrid('appendRow',row);
+        row = {
+            name:'手机号',
+            value:userPojo.phone
+        };
+        $('#pg').propertygrid('appendRow',row);
+        if(localStorage.getItem("identity") == 1){
+            row = {
+                name:'职称/称号',
+                value:userPojo.protitle,
+                editor:'text'
+            };
+            $('#pg').propertygrid('appendRow',row);
+            row = {
+                name:'研究领域',
+                value:userPojo.direction,
+                editor:'text'
+            };
+            $('#pg').propertygrid('appendRow',row);
+            row = {
+                name:'您对学生的要求',
+                //value: userPojo.discription,
+                value:userPojo.discription,
+                fit:true,
+                editor:'text'
+            };
+            $('#pg').propertygrid('appendRow',row);
+            initdatagirdload();
+        }
+    });
+</script>
+<div class="easyui-panel" data-options="fit:true" style="width:100%;padding:1px;">
+    <div class="easyui-layout" data-options="fit:true">
+        <div data-options="region:'west',split:false" style="width:400px;padding:1px">
+            <table id="pg" class="easyui-propertygrid" style="width:397px">
+            </table>
+
+        </div>
+        <div data-options="region:'center'" style="padding:1px">
+            <table id="studentdg" class="easyui-datagrid" data-options="border:false,singleSelect:true,fit:true,fitColumns:true"></table>
+            <script type="text/javascript">
+                function initdatagirdload() {
+                    $.ajax({//老师获取我的学生
+                        type: 'get',
+                        dataType: 'json',
+                        url: ipAddress + "studentTitleList",
+                        beforeSend: function (request) {
+                            request.setRequestHeader("token", localStorage.getItem("token"));
+                        },
+                        success: function (returndata) {
+                            studentinformation = returndata;
+                            var dgstu = $('#studentdg').datagrid({
+                                striped: true,
+                                data:studentinformation,
+                                singleSelect:true,
+                                loadMsg:'^_^请稍等',
+                                emptyMsg: '真抱歉，还没有一个学生选您的题目呢~',
+                                pagination:true,
+                                pageSize: 10,
+                                pageList: [10, 20, 30],
+                                columns: [
+                                    [
+                                        {
+                                            field: 'name',
+                                            title: '学生姓名',
+                                            width: '12%',
+                                            align: 'center',
+                                            formatter: function(value,row,index) {
+                                                if (row.student){
+                                                    //return "<span title='" + row.guideTeacher.name + "'>" + row.guideTeacher.name + "</span>";
+                                                    return row.student.name;
+                                                } else {
+                                                    return value;
+                                                }
+                                            }
+                                        },
+                                        {
+                                            field: 'professName',
+                                            title: '所在专业',
+                                            width: '22%',
+                                            align: 'center',
+                                            formatter: function(value,row,index) {
+                                                if (row.student){
+                                                    //return "<span title='" + row.guideTeacher.name + "'>" + row.guideTeacher.name + "</span>";
+                                                    return row.student.professName;
+                                                } else {
+                                                    return value;
+                                                }
+                                            }
+                                        },
+                                        {
+                                            field: 'phone',
+                                            title: '手机号',
+                                            width: '14%',
+                                            align: 'center',
+                                            formatter: function(value,row,index) {
+                                                if (row.student){
+                                                    //return "<span title='" + row.guideTeacher.name + "'>" + row.guideTeacher.name + "</span>";
+                                                    return row.student.phone;
+                                                } else {
+                                                    return value;
+                                                }
+                                            }
+                                        },
+                                        {
+                                            field: 'titleName',
+                                            title: '所选题目',
+                                            width: '23%',
+                                            align: 'center',
+                                            formatter: function(value,row,index) {
+                                                if (row.title){
+                                                    return "<span title='" + row.title.titleName + "'>" + row.title.titleName + "</span>";
+                                                    //return row.title.titleName;
+                                                } else {
+                                                    return value;
+                                                }
+                                            }
+                                        },
+                                        {
+                                            field: 'limitTime',
+                                            title: '题目截止时间',
+                                            width: '19%',
+                                            align: 'center',
+                                            formatter: function(value,row,index) {
+                                                if (row.title){
+                                                    //return "<span title='" + row.guideTeacher.name + "'>" + row.guideTeacher.name + "</span>";
+                                                    return row.title.limitTime;
+                                                } else {
+                                                    return value;
+                                                }
+                                            }
+                                        },
+                                        {
+                                            field: 'finished',
+                                            title: '完成状态',
+                                            width: '12%',
+                                            align: 'center',
+                                            formatter: function(value,row,index) {
+                                                if(row.finished == true){
+                                                    return '已完成';
+                                                }else {
+                                                    return '<span style="color:red;">('+"未完成"+')</span>';
+                                                }
+                                            }
+                                        }
+                                    ]
+                                ]
+                            });
+                            var fbutton = dgstu.datagrid('getPager');
+                            fbutton.pagination({
+                                buttons:[
+                                    {
+                                        iconCls: 'icon-cancel',
+                                        handler: function() {
+                                            var selectedrowsdata = [];
+                                            var selectedrowsdata = $('#studentdg').datagrid('getSelections');
+                                            if(selectedrowsdata.length == 0){
+                                                $.messager.show({
+                                                    title:'提示',
+                                                    msg:'请先选择要退选学生',
+                                                    timeout:1900,
+                                                    showType:'slide'
+                                                });
+                                            }else {
+                                                $.messager.confirm('警告', '您确定要强制退选您的学生吗？', function(r){
+                                                    if (r){
+                                                        $.ajax({//老师获取我的学生
+                                                            type: 'post',
+                                                            dataType: 'json',
+                                                            url: ipAddress + "teacherCancelStudentTitle",
+                                                            beforeSend: function (request) {
+                                                                request.setRequestHeader("token", localStorage.getItem("token"));
+                                                            },
+                                                            data: {
+                                                                studentAccount:selectedrowsdata[0].student.account
+                                                            },
+                                                            success: function (returndata) {
+                                                                $.messager.show({
+                                                                    title:'提示',
+                                                                    msg:returndata.message,
+                                                                    timeout:1900,
+                                                                    showType:'slide'
+                                                                });
+                                                                if(returndata.state == 1){
+                                                                    initdatagirdload();
+                                                                }
+                                                            },
+                                                            error:function () {
+                                                                errorHandle(e);
+                                                            }
+                                                        });
+                                                    }
+                                                });
+                                            }
+                                        }
+                                    }
+                                ]
+                            });
+                        },
+                        error: function (e) {
+                            errorHandle(e);
+                        }
+                    });
+                }
+            </script>
+        </div>
+    </div>
+</div>
+</body>
+</html>

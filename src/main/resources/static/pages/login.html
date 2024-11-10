@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>登录</title>
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/icon.css">
+    <script type="text/javascript" src="easyUI/jquery.min.js"></script>
+    <script type="text/javascript" src="easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="javascript/addressIP.js"></script>
+</head>
+<body style="text-align:center; background-color:#B7D2FF">
+<h2 align="center">登录</h2>
+<div style="margin:20px 0;"></div>
+<div style="margin:0px auto;width:430px">
+    <div class="easyui-panel" title="菏泽学院毕业论文管理系统" style="width:100%;max-width:400px;padding:30px 60px;">
+        <form id="ff" class="easyui-form" data-options="novalidate:true">
+            <div style="margin-bottom:20px">
+                <input id="inputaccount" class="easyui-textbox" name="schid" prompt="长度5-15位:" style="width:100%" data-options="label:'您的账号:',required:true,iconCls:'icon-man'">
+            </div>
+            <div style="margin-bottom:20px">
+                <input id="inputpassword" class="easyui-passwordbox" name="password" prompt="密码应6-20位:" style="width:100%" data-options="label:'输入密码:',required:true,iconCls:'icon-lock'">
+            </div>
+        </form>
+        <div style="text-align:center;padding:5px 0">
+            <a href="javascript:void(0)" class="easyui-linkbutton" onclick="registeraccount()" style="width:80px">注册</a>
+            <a id="submitform" href="javascript:void(0)" class="easyui-linkbutton" onclick="loginUser()" style="width:80px">登录</a>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    function registeraccount() {
+        location.href = "addstudent.html";
+    }
+    function loginUser() {
+        var accountvalue = document.getElementById("inputaccount").value;
+        var passwordvalue = document.getElementById("inputpassword").value;
+        if(accountvalue == null || accountvalue.trim()=="" || passwordvalue == null || passwordvalue.trim() == ""){
+            $.messager.show({
+                title:'提示',
+                msg:'请输入账号密码后点击登录',
+                timeout:1600,
+                showType:'slide'
+            });
+        }else{
+            $('#submitform').linkbutton('disable');
+            var loginurl = ipAddress+"login";
+            var k = 0;
+            $.ajax({
+                type: 'post',
+                dataType: 'json',
+                url: loginurl,
+                data:{
+                    account : accountvalue,
+                    password : passwordvalue
+                },
+                success: function (data) {
+                    $('#submitform').linkbutton('enable');
+                    if(data.state == 1){
+                        localStorage.setItem("token",data.jsonData);
+                        localStorage.setItem("userAccount",accountvalue);
+                        localStorage.setItem("identity",data.message);
+                        if(data.message == 0){
+                            self.location = "studenthomepage.html";
+                        }else{
+                            self.location = "teacherhomepage.html";
+                        }
+                    }else{
+                        $('#ff').form('clear');
+                        $.messager.show({
+                            title:'提示',
+                            msg:'请检查您的账号密码是否正确并重新登录!',
+                            timeout:1600,
+                            showType:'slide'
+                        });
+                    }
+                },
+                error: function (e) {
+                    $('#submitform').linkbutton('enable');
+                    $.messager.alert('注意','请检查输入信息是否合法，以及网络连接情况','info');
+                }
+            });
+        }
+    }
+
+    $(function () {
+        var ste = localStorage.getItem("appstate");
+        localStorage.clear();
+        if("timeout" == ste){
+            $.messager.alert('注意','登录已失效，请重新登陆','info');
+        }
+    });
+</script>
+</html>

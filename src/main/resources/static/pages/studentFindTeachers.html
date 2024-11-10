@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>菏泽学院</title>
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/icon.css">
+    <script type="text/javascript" src="easyUI/jquery.min.js"></script>
+    <script type="text/javascript" src="easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="javascript/addressIP.js"></script>
+</head>
+<script type="text/javascript">
+    $(function () {
+        var userEnt = JSON.parse(localStorage.getItem("userEntity"));
+        var teachersurl = ipAddress+"getAllTeachers";
+        $.ajax({
+            type:'post',
+            dataType:'json',
+            url: teachersurl,
+            beforeSend: function(request) {
+                request.setRequestHeader("token", localStorage.getItem("token"));
+            },
+            data:{
+                departName :userEnt.departName
+            },
+            success:function (returndata) {
+                var dg = $("#dgteacher").datagrid({
+                    striped: true,
+                    data:returndata,
+                    fit:true,
+                    fitColumns:true,
+                    emptyMsg:'暂无教师信息',
+                    border:false,
+                    singleSelect:true,
+                    loadMsg:'^_^请稍等',
+                    pagination:true,
+                    pageSize: 10,
+                    pageList: [10, 20, 30],
+                    columns: [
+                        [
+                            {
+                                field: 'account',
+                                title: '教工号',
+                                width: '10%',
+                                align: 'center'
+                            },
+                            {
+                                field: 'name',
+                                title: '教师姓名',
+                                width: '10%',
+                                align: 'center'
+                            },
+                            {
+                                field: 'email',
+                                title: '邮箱',
+                                width: '16%',
+                                align: 'center'
+                            },
+                            {
+                                field: 'phone',
+                                title: '手机',
+                                width: '14%',
+                                align: 'center'
+                            },
+                            {
+                                field: 'protitle',
+                                title: '职称/称号',
+                                width: '12%',
+                                align: 'center'
+                            },
+                            {
+                                field: 'direction',
+                                title: '研究领域',
+                                width: '19.5%',
+                                align: 'center'
+                            },
+                            {
+                                field: 'direction',
+                                title: '教师要求',
+                                width: '20%',
+                                align: 'center'
+                            }
+                        ]
+                    ]
+                });
+            },
+            error:function (e) {
+                errorHandle(e);
+            }
+        });
+    })
+</script>
+<body>
+<table id="dgteacher" class="easyui-datagrid"></table>
+</body>
+</html>

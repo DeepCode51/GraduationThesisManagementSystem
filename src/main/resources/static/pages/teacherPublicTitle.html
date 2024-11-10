@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>菏泽学院</title>
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/icon.css">
+    <script type="text/javascript" src="easyUI/jquery.min.js"></script>
+    <script type="text/javascript" src="easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="javascript/addressIP.js"></script>
+</head>
+<body class="easyui-layout">
+<div data-options="region:'east',split:false" style="width: 220px;" >
+    <div id="datalistdom" data-options="title:'可选专业'" class="easyui-datalist" style="width:100%;">
+    </div>
+</div>
+<div data-options="region:'center'" style="padding: 0px;background: #eee; overflow: hidden;">
+    <table id="dg" class="easyui-datagrid" data-options="border:false,singleSelect:true,fit:true,fitColumns:true"></table>
+</div>
+<script type="application/javascript">
+    function loadTitleDatagrid(datagridtitleurl){
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            url: datagridtitleurl,
+            beforeSend: function(request) {
+                request.setRequestHeader("token", localStorage.getItem("token"));
+            },
+            success: function (list) {
+                var dg =
+                    $('#dg').datagrid({
+                        striped: true,
+                        data:list,
+                        singleSelect:true,
+                        loadMsg:'^_^请稍等',
+                        emptyMsg: '暂无教师公布题目',
+                        pagination:true,
+                        pageSize: 10,
+                        pageList: [10, 20, 30],
+                        columns: [
+                            [
+                                {
+                                    field: 'titleId',
+                                    title: '题目编号',
+                                    width: '8%',
+                                    align: 'center'
+                                },
+                                {
+                                    field: 'titleName',
+                                    title: '题目名称',
+                                    width: '22%',
+                                    align: 'center',
+                                    formatter: function(value,row,index) {
+                                        if (row.titleName){
+                                            return "<span title='" + row.titleName + "'>" + row.titleName + "</span>";
+                                            //return row.guideTeacher.name;
+                                        } else {
+                                            return value;
+                                        }
+                                    }
+                                },
+                                {
+                                    field: 'guideTeacher',
+                                    title: '指导教师',
+                                    width: '9%',
+                                    align: 'center',
+                                    formatter: function(value,row,index) {
+                                        if (row.guideTeacher){
+                                            //return "<span title='" + row.guideTeacher.name + "'>" + row.guideTeacher.name + "</span>";
+                                            return row.guideTeacher.name;
+                                        } else {
+                                            return value;
+                                        }
+                                    }
+                                },
+                                {
+                                    field: 'description',
+                                    title: '题目简介',
+                                    width: '17%',
+                                    align: 'center',
+                                    formatter: function(value,row,index) {
+                                        if (row.description){
+                                            return "<span title='" + row.description + "'>" + row.description + "</span>";
+                                            //return row.guideTeacher.name;
+                                        } else {
+                                            return value;
+                                        }
+                                    }
+                                },
+                                {
+                                    field: 'publishTime',
+                                    title:'发布时间',
+                                    width: '15%',
+                                    align:'center'
+                                },
+                                {
+                                    field:'limitTime',
+                                    title:'截止时间',
+                                    width:'15%',
+                                    align:'center'
+                                },
+                                {
+                                    field:'limitStudentNumber',
+                                    title:'限选人数',
+                                    width:'8%',
+                                    align:'center'
+                                },
+                                {
+                                    field:'checkStudentNumber',
+                                    title:'已选人数',
+                                    width:'8%',
+                                    align:'center'
+                                }
+                            ]
+                        ],
+                        onSelect:function (index, row) {
+                            loadmydatalist(row);
+                        }
+                    });
+            },
+            error:function(e){
+                errorHandle(e);
+            }
+        });
+    }
+    $(function () {
+        cancheckrows = 0;
+        datagridtitleurl = ipAddress+"getAllTitle";
+        getallprofessurl = ipAddress+"getTeacherProfess";
+        useraccountvalue = localStorage.getItem("userAccount");
+        loadTitleDatagrid(datagridtitleurl);
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            url: getallprofessurl,
+            beforeSend: function(request) {
+                request.setRequestHeader("token", localStorage.getItem("token"));
+            },
+            success:function(datai){
+                professlist = datai;
+                $('#professelect').combobox({
+                    data:datai.rows,
+                    label: '可选专业',
+                    valueField:'id',
+                    required:true,
+                    textField:'professname',
+                    limitToList:true,
+                    multiple:true,
+                    panelHeight:'auto',
+                    separator:' '
+                });
+                $('#editprofesselect').combobox({
+                    data:datai.rows,
+                    label: '可选专业',
+                    valueField:'id',
+                    required:true,
+                    textField:'professname',
+                    limitToList:true,
+                    multiple:true,
+                    panelHeight:'auto',
+                    separator:' '
+                });
+                $('#datalistdom').datalist({
+                    valueField:'id',
+                    singleSelect:false,
+                    textField:'professname',
+                    data: datai,
+                    checkbox: true,
+                    lines: true
+                });
+            },
+            error: function (e) {
+                errorHandle(e);
+            }
+        })
+    });
+    function loadmydatalist(rowdata) {
+        var getallselectprofess = ipAddress+"getProfessAcceptedTitle";
+        $('#datalistdom').datagrid('uncheckAll');
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            url: getallselectprofess,
+            beforeSend: function(request) {
+                request.setRequestHeader("token", localStorage.getItem("token"));
+            },
+            data: {
+                titleID: rowdata.titleId
+            },
+            success:function(returndata){
+                var len = professlist.total;
+                var rows=$('#datalistdom').datagrid('getRows');
+                cancheckrows = 1;
+                for(var i = 0;i<len;i++){
+                    for(var j = 0;j<returndata.total;j++){
+                        if(rows[i].id == returndata.rows[j].id){
+                            if(cancheckrows == 1){
+                                $('#datalistdom').datagrid('checkRow', i);
+                            }
+                            break;
+                        }
+                    }
+                }
+                cancheckrows = 0;
+            },
+            error: function (e) {
+                errorHandle(e);
+            }
+        });
+    }
+</script>
+</body>
+</html>

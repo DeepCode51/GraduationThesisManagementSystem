@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>菏泽学院</title>
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/icon.css">
+    <script type="text/javascript" src="easyUI/jquery.min.js"></script>
+    <script type="text/javascript" src="easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="javascript/addressIP.js"></script>
+</head>
+<body class="easyui-layout">
+    <div data-options="region:'east',split:false" style="width: 220px;" >
+        <div id="datalistdom" data-options="title:'可选专业'" class="easyui-datalist" style="width:100%;">
+        </div>
+    </div>
+    <div data-options="region:'center'" style="padding: 0px;background: #eee; overflow: hidden;">
+        <table id="dg" class="easyui-datagrid" data-options="border:false,singleSelect:true,fit:true,fitColumns:true"></table>
+    </div>
+<script type="application/javascript">
+    function loadTitleDatagrid(datagridtitleurl){
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            url: datagridtitleurl,
+            beforeSend: function(request) {
+                request.setRequestHeader("token", localStorage.getItem("token"));
+            },
+            success: function (list) {
+                var dg =
+                    $('#dg').datagrid({
+                        striped: true,
+                        data:list,
+                        singleSelect:true,
+                        loadMsg:'^_^请稍等',
+                        emptyMsg: '您还没有发布题目呢',
+                        pagination:true,
+                        pageSize: 10,
+                        pageList: [10, 20, 30],
+                        columns: [
+                            [
+                                {
+                                    field: 'titleId',
+                                    title: '题目编号',
+                                    width: '8%',
+                                    align: 'center'
+                                },
+                                {
+                                    field: 'titleName',
+                                    title: '题目名称',
+                                    width: '22%',
+                                    align: 'center',
+                                    formatter: function(value,row,index) {
+                                        if (row.titleName){
+                                            return "<span title='" + row.titleName + "'>" + row.titleName + "</span>";
+                                            //return row.guideTeacher.name;
+                                        } else {
+                                            return value;
+                                        }
+                                    }
+                                },
+                                {
+                                    field: 'guideTeacher',
+                                    title: '指导教师',
+                                    width: '9%',
+                                    align: 'center',
+                                    formatter: function(value,row,index) {
+                                        if (row.guideTeacher){
+                                            //return "<span title='" + row.guideTeacher.name + "'>" + row.guideTeacher.name + "</span>";
+                                            return row.guideTeacher.name;
+                                        } else {
+                                            return value;
+                                        }
+                                    }
+                                },
+                                {
+                                    field: 'description',
+                                    title: '题目简介',
+                                    width: '17%',
+                                    align: 'center',
+                                    formatter: function(value,row,index) {
+                                        if (row.description){
+                                            return "<span title='" + row.description + "'>" + row.description + "</span>";
+                                            //return row.guideTeacher.name;
+                                        } else {
+                                            return value;
+                                        }
+                                    }
+                                },
+                                {
+                                    field: 'publishTime',
+                                    title:'发布时间',
+                                    width: '15%',
+                                    align:'center'
+                                },
+                                {
+                                    field:'limitTime',
+                                    title:'截止时间',
+                                    width:'15%',
+                                    align:'center'
+                                },
+                                {
+                                    field:'limitStudentNumber',
+                                    title:'限选人数',
+                                    width:'8%',
+                                    align:'center'
+                                },
+                                {
+                                    field:'checkStudentNumber',
+                                    title:'已选人数',
+                                    width:'8%',
+                                    align:'center'
+                                }
+                            ]
+                        ],
+                        onSelect:function (index, row) {
+                            loadmydatalist(row);
+                        }
+                    });
+                var fbutton = dg.datagrid('getPager');
+                fbutton.pagination({
+                    buttons: [{
+                        iconCls: 'icon-add',
+                        handler: function() {
+                            $('#addtitle').dialog('open');
+                            $('#addtitle').window('center');
+                        }
+                    },{
+                        iconCls: 'icon-edit',
+                        handler: function () {
+                            selectedrows = $('#dg').datagrid('getSelections');
+                            if(selectedrows.length == 0){
+                                $.messager.alert('提示', '能不能先选好了要修改的题目再点我', 'warning');
+                            }else{
+                                
+                                $('#ee').form('load',{
+                                    titleName:selectedrows[0].titleName,
+                                    titleLimitNumber:selectedrows[0].limitStudentNumber,
+                                    titleLimitTime:selectedrows[0].limitTime,
+                                    titleMessage:selectedrows[0].description
+                                });
+                                $('#edittitle').dialog('open');
+                                $('#edittitle').window('center');
+                            }
+                        }
+                    },{
+                        iconCls:'icon-remove',
+                        handler:function () {
+                            $.messager.confirm('确认对话框', '您确定要删除这个题目吗？', function(r){
+                                if (r){
+                                    var deletetitleurl = ipAddress+"deleteTitle";
+                                    selectedrows = $('#dg').datagrid('getSelections');
+                                    if(selectedrows.length == 0){
+                                        $.messager.alert('提示', '能不能先选好了要删除的题目再点我', 'warning');
+                                    }else{
+                                        $.ajax({
+                                            type: 'post',
+                                            dataType: 'json',
+                                            url: deletetitleurl,
+                                            beforeSend: function (request) {
+                                                request.setRequestHeader("token", localStorage.getItem("token"));
+                                            },
+                                            data: {
+                                                deleteTitleID:selectedrows[0].titleId
+                                            },
+                                            success: function (returndata) {
+                                                if(returndata.state == 1){
+                                                    loadTitleDatagrid(datagridtitleurl);
+                                                    $.messager.show({
+                                                        title:'提示',
+                                                        msg:returndata.message,
+                                                        timeout:1600,
+                                                        showType:'slide'
+                                                    });
+                                                }else{
+                                                    $.messager.show({
+                                                        title:'提示',
+                                                        msg:'未知错误, 删除失败',
+                                                        timeout:1600,
+                                                        showType:'slide'
+                                                    });
+                                                }
+                                            },
+                                            error:function (e) {
+                                                errorHandle(e);
+                                            }
+                                        });
+                                    }
+                                }
+                            });
+                        }
+                    }]
+                });
+            },
+            error:function(e){
+                errorHandle(e);
+            }
+        });
+    }
+    $(function () {
+        cancheckrows = 0;
+        datagridtitleurl = ipAddress + "getTeacherTitles";
+        getallprofessurl = ipAddress + "getTeacherProfess";
+        useraccountvalue = localStorage.getItem("userAccount");
+        loadTitleDatagrid(datagridtitleurl);
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            url: getallprofessurl,
+            beforeSend: function(request) {
+                request.setRequestHeader("token", localStorage.getItem("token"));
+            },
+            success:function(datai){
+                professlist = datai;
+                $('#professelect').combobox({
+                    data:datai.rows,
+                    label: '可选专业',
+                    valueField:'id',
+                    required:true,
+                    editable:false,
+                    textField:'professname',
+                    limitToList:true,
+                    multiple:true,
+                    panelHeight:'auto',
+                    separator:' '
+                });
+                $('#editprofesselect').combobox({
+                    data:datai.rows,
+                    label: '可选专业',
+                    valueField:'id',
+                    required:false,
+                    editable:false,
+                    textField:'professname',
+                    limitToList:true,
+                    multiple:true,
+                    panelHeight:'auto',
+                    separator:' '
+                });
+                $('#datalistdom').datalist({
+                    valueField:'id',
+                    singleSelect:false,
+                    textField:'professname',
+                    data: datai,
+                    checkbox: true,
+                    lines: true
+                });
+            },
+            error: function (e) {
+                errorHandle(e);
+            }
+        })
+    });
+
+    function loadmydatalist(rowdata) {
+        var getallselectprofess = ipAddress + "getProfessAcceptedTitle";
+        $('#datalistdom').datagrid('uncheckAll');
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            url: getallselectprofess,
+            beforeSend: function(request) {
+                request.setRequestHeader("token", localStorage.getItem("token"));
+            },
+            data: {
+                titleID: rowdata.titleId
+            },
+            success:function(returndata){
+                var len = professlist.total;
+                var rows=$('#datalistdom').datagrid('getRows');
+                cancheckrows = 1;
+                for(var i = 0;i<len;i++){
+                    for(var j = 0;j<returndata.total;j++){
+                        if(rows[i].id == returndata.rows[j].id){
+                            if(cancheckrows == 1){
+                                $('#datalistdom').datagrid('checkRow', i);
+                            }
+                            break;
+                        }
+                    }
+                }
+                cancheckrows = 0;
+            },
+            error: function (e) {
+                errorHandle(e);
+            }
+        });
+    }
+</script>
+    <div id="addtitle" class="easyui-dialog" title="发布新题目" data-options="iconCls:'icon-save',closed:true"
+         style="width:400px;height:420px;padding:10px">
+        <form id="ff" method="post">
+            <div style="margin-bottom:20px">
+                <input id="inputtitlename" class="easyui-textbox" name="titleName" style="width:100%;" data-options="label:'论文题目:',required:true">
+            </div>
+            <div style="margin-bottom:20px">
+                <input id="inputlimitnumber" class="easyui-numberspinner" name="titleLimitNumber" style="width:100%;" required="required" data-options="label:'限选人数',required:true,min:1,max:9999,value:8, precision:0">
+            </div>
+            <div style="margin-bottom:20px">
+                <input id="inputlimittime" class="easyui-datetimebox" name="titleLimitTime" data-options="label:'截止时间',required:true,showSeconds:false,editable:false,formatter:formatter,parser:parser" style="width:100%;">
+            </div>
+            <div style="margin-bottom:20px">
+                <input  id="professelect" class="easyui-combobox" style="width:100%;">
+            </div>
+            <div style="margin-bottom: 20px">
+                <input id="inputtitledescription" class="easyui-textbox" name="titleMessage" style="width:100%;height:110px" prompt="请您填写对于本题目的介绍，和对选题学生的要求" data-options="label:'题目介绍:',multiline:true">
+            </div>
+        </form>
+        <div style="text-align:center;padding:5px 0">
+            <a id="publishnow" href="javascript:void(0)" class="easyui-linkbutton" onclick="submitForm()" style="width:80px">立即发布</a>
+            <a href="javascript:void(0)" class="easyui-linkbutton" onclick="clearForm()" style="width:80px">重新编辑</a>
+            <script type="text/javascript">
+                function clearForm(){
+                    $('#ff').form('clear');
+                }
+                function submitForm() {
+                    $('#publishnow').linkbutton({disabled:true});
+                    var profs = document.getElementById("professelect").value;
+                    var titlename = document.getElementById("inputtitlename").value;
+                    var limitnumber = document.getElementById("inputlimitnumber").value;
+                    var limittime = document.getElementById("inputlimittime").value;
+                    var descriptionvalue = document.getElementById("inputtitledescription").value;
+                    var keynext = 0;
+                    if(profs == null || profs.trim().length == 0 || titlename == null || titlename.trim().length == 0 || limittime == null || limittime.trim().length == 0 || descriptionvalue == null || descriptionvalue.trim().length == 0){
+                        keynext = 1;
+                        $.messager.alert('警告','请输入完整信息',"info",function (r) {
+                            $('#publishnow').linkbutton({disabled:false});
+                        });
+                    }
+                    if(keynext == 0){
+                        var addtitleurl = ipAddress+"publishTitle";
+                        $.ajax({
+                            type: 'post',
+                            dataType: 'json',
+                            url: addtitleurl,
+                            beforeSend: function (request) {
+                                request.setRequestHeader("token", localStorage.getItem("token"));
+                            },
+                            data: {
+                                titleName: titlename,
+                                description:descriptionvalue,
+                                limitTime:limittime,
+                                limitNumber:limitnumber,
+                                acceptProfessStr:profs
+                            },
+                            success: function (returndata) {
+                                $('#publishnow').linkbutton({disabled:false});
+                                if(returndata.state == 1){
+                                    $('#addtitle').dialog('close');
+                                    loadTitleDatagrid(datagridtitleurl);
+                                    $.messager.show({
+                                        title:'提示',
+                                        msg:'题目发布成功！',
+                                        timeout:1600,
+                                        showType:'slide'
+                                    });
+                                }else{
+                                    $.messager.show({
+                                        title:'提示',
+                                        msg:returndata.message,
+                                        timeout:1600,
+                                        showType:'slide'
+                                    });
+                                }
+                            },
+                            error: function (e) {
+                                $('#publishnow').linkbutton({disabled:false});
+                                errorHandle(e);
+                            }
+                        });
+                    }
+                }
+            </script>
+        </div>
+    </div>
+
+    <div id="edittitle" class="easyui-dialog" title="修改题目信息" data-options="iconCls:'icon-save',closed:true"
+         style="width:400px;height:420px;padding:10px">
+        <form id="ee" method="post">
+            <div style="margin-bottom:20px">
+                <input id="edittitlename" class="easyui-textbox" name="titleName" style="width:100%;" data-options="label:'论文题目:',required:true">
+            </div>
+            <div style="margin-bottom:20px">
+                <input id="editlimitnumber" name="titleLimitNumber" class="easyui-numberspinner" style="width:100%;" required="required" data-options="label:'限选人数',required:true,min:1,max:9999,value:8, precision:0">
+            </div>
+            <div style="margin-bottom:20px">
+                <input id="editlimittime" class="easyui-datetimebox" name="titleLimitTime" data-options="label:'截止时间',required:false,showSeconds:false, formatter:formatter,parser:parser,editable:false" style="width:100%;">
+            </div>
+            <div style="margin-bottom:20px">
+                <input  id="editprofesselect" name="titleLimitProfess" class="easyui-combobox" style="width:100%;">
+            </div>
+            <div style="margin-bottom: 20px">
+                <input id="edittitledescription" class="easyui-textbox" name="titleMessage" style="width:100%;height:110px" prompt="请您填写对于本题目的介绍，和对选题学生的要求" data-options="label:'题目介绍:',multiline:true">
+            </div>
+            <div style="text-align:center;padding:5px 0">
+                <a id="titlepublish" href="javascript:void(0)" class="easyui-linkbutton" onclick="submitEditForm()" style="width:80px">立即发布</a>
+                <a href="javascript:void(0)" class="easyui-linkbutton" onclick="clearEditForm()" style="width:80px">重新编辑</a>
+            </div>
+        </form>
+        <script type="text/javascript">
+            function clearEditForm(){
+                $('#ee').form('clear');
+            }
+            function submitEditForm(){
+                $('#titlepublish').linkbutton({disabled:true});
+                if(selectedrows.length != 1){
+                    alert("程序出现错误");
+                }else{
+                    var profs = document.getElementById("editprofesselect").value;
+                    var titlename = document.getElementById("edittitlename").value;
+                    var limitnumber = document.getElementById("editlimitnumber").value;
+                    var limittime = document.getElementById("editlimittime").value;
+                    var descriptionvalue = document.getElementById("edittitledescription").value;
+                    var title = {};
+                    title.titleId = selectedrows[0].titleId;
+                    title.titleName = titlename;
+                    title.description = descriptionvalue;
+                    title.limitTime = limittime;
+                    title.limitStudentNumber = limitnumber;
+                    title.professlistStr = profs;
+                    title.account = localStorage.getItem("userAccount");
+                    var updateurl = ipAddress+"updateTitle";
+                    $.ajax({
+                        type: 'post',
+                        dataType: 'json',
+                        url: updateurl,
+                        beforeSend: function (request) {
+                            request.setRequestHeader("token", localStorage.getItem("token"));
+                        },
+                        data:{
+                            titleId : selectedrows[0].titleId,
+                            titleName : titlename,
+                            description:descriptionvalue,
+                            limitTime:limittime,
+                            limitStudentNumber:limitnumber,
+                            professlistStr:profs
+                        },
+                        success:function (dataresult) {
+                            $('#titlepublish').linkbutton({disabled:false});
+                            if(dataresult.state == 1){
+                                $('#edittitle').dialog('close');
+                                $('#datalistdom').datagrid('uncheckAll');
+                                loadTitleDatagrid(datagridtitleurl);
+                            }
+                            $.messager.show({
+                                title:'提示',
+                                msg:dataresult.message,
+                                timeout:1600,
+                                showType:'slide'
+                            });
+                        },
+                        error:function (e) {
+                            $('#titlepublish').linkbutton({disabled:false});
+                            errorHandle(e);
+                        }
+                    });
+                }
+            }
+        </script>
+    </div>
+</body>
+</html>

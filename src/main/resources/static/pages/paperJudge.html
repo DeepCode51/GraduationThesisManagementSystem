@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>菏泽学院</title>
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/icon.css">
+    <script type="text/javascript" src="easyUI/jquery.min.js"></script>
+    <script type="text/javascript" src="easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="javascript/addressIP.js"></script>
+</head>
+<body class="easyui-layout">
+<script type="text/javascript">
+
+    function loadPlanList(planurl){
+        $.ajax({
+            type:'post',
+            dataType:'json',
+            url: planurl,
+            beforeSend:function (request) {
+                request.setRequestHeader("token", localStorage.getItem("token"));
+            },
+            success:function (returndata) {
+                $('#planlist').datalist({
+                    data: returndata.rows,
+                    valueField:'PlanID',
+                    textField:'content',
+                    checkbox: true,
+                    singleSelect:true,
+                    loadMsg:'^_^请稍等',
+                    emptyMsg: '您还没有添加流程信息呢',
+                    onCheck: function (index, row) {
+                        loadDatagridPaper(row.planID);
+                    }
+                });
+            },
+            error:function (e) {
+                errorHandle(e);
+            }
+        })
+    }
+    $(function () {
+        myplanurl = ipAddress + "getTeacherPlanList";
+        loadPlanList(myplanurl);
+        handleDatagridlist({});
+    })
+</script>
+    <div data-options="region:'west',split:false" style="width: 287px;">
+        <div class="easyui-layout" style="width:100%;" data-options="fit:true">
+            <div data-options="region:'center', fit:true">
+                <div id="planlist" data-options="title:'论文审批流程'" class="easyui-datalist" style="width:100%;">
+                </div>
+            </div>
+            <div data-options="region:'south',split:false" style="height:34px">
+                <a href="#" class="easyui-linkbutton" onclick="prompt()" data-options="iconCls:'icon-add'">加入新审批流程</a>
+                <a href="#" id="delplan" class="easyui-linkbutton" onclick="deleteplan()" data-options="iconCls:'icon-remove'">删除选中审批流程</a>
+            </div>
+        </div>
+        <script>
+            function deleteplan() {
+                $('#delplan').linkbutton('disable');
+                var selectedrows = $('#planlist').datalist('getSelections');
+                if(selectedrows.length == 0){
+                    $('#delplan').linkbutton('enable');
+                    $.messager.show({
+                        title:'提示',
+                        msg:'请先选择您要取消的审批流程',
+                        timeout:2000,
+                        showType:'slide'
+                    });
+                }else {
+                    var keyvalue = selectedrows[0].planID;
+                    var deleteurl = ipAddress + "deleteOnePlan";
+                    $.ajax({
+                        type:'post',
+                        dataType:'json',
+                        url: deleteurl,
+                        beforeSend:function (request) {
+                            request.setRequestHeader("token",localStorage.getItem("token"));
+                        },
+                        data:{
+                            planID:keyvalue
+                        },
+                        success:function (data) {
+                            $('#delplan').linkbutton('enable');
+                            $.messager.show({
+                                title:'提示',
+                                msg:data.message,
+                                timeout:2000,
+                                showType:'slide'
+                            });
+                            if(data.state == 1){
+                                loadPlanList(myplanurl);
+                            }
+                        },
+                        error:function (e) {
+                            $('#delplan').linkbutton('enable');
+                            errorHandle(e);
+                        }
+                    });
+                }
+            }
+            function prompt() {
+                $.messager.prompt('加入新审批流程', '请输入流程名称', function(r){
+                    if (r){
+                        if(r.trim().length>0 && r.trim().length<100){
+                            var addworkurl = ipAddress + "addOnePlan";
+                            $.ajax({
+                                type: 'post',
+                                dataType: 'json',
+                                url: addworkurl,
+                                beforeSend: function (request) {
+                                    request.setRequestHeader("token", localStorage.getItem("token"));
+                                },
+                                data:{
+                                    newPlan: r
+                                },
+                                success:function (data) {
+                                    $.messager.show({
+                                        title:'提示',
+                                        msg:data.message,
+                                        timeout:2000,
+                                        showType:'slide'
+                                    });
+                                    if(data.state == 1){
+                                        loadPlanList(myplanurl);
+                                    }
+                                },
+                                error:function (e) {
+                                    errorHandle(e);
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+            function loadDatagridPaper(planid) {
+                var listurl = ipAddress + "teacherGetNotJudgePapers";
+                $.ajax({
+                    type:'post',
+                    dataType:'json',
+                    url:listurl,
+                    beforeSend:function (request) {
+                        request.setRequestHeader("token",localStorage.getItem("token"));
+                    },
+                    data:{
+                        planID:planid
+                    },
+                    success:function (datas) {
+                        handleDatagridlist(datas);
+                    },
+                    error:function (e) {
+                        errorHandle(e);
+                    }
+                });
+            }
+        </script>
+    </div>
+    <div data-options="region:'center'">
+        <table id="teacherjudge" class="easyui-datagrid"></table>
+        <script>
+            function handleDatagridlist(loaddata) {
+                $('#teacherjudge').datagrid({
+                    data:loaddata,
+                    striped: true,
+                    border:false,
+                    singleSelect:true,
+                    idField: 'paperID',
+                    fit:true,
+                    fitColumns:true,
+                    loadMsg:'^_^请稍等',
+                    emptyMsg: '您还没有发布题目呢',
+                    pagination:true,
+                    pageSize: 10,
+                    pageList: [10, 20, 30],
+                    columns: [
+                        [
+                            {
+                                field: 'paperID',
+                                title: '论文编号',
+                                width: '11%',
+                                align: 'center'
+                            },
+                            {
+                                field: 'submitStudent',
+                                title: '学生姓名',
+                                width: '12%',
+                                align: 'center',
+                                formatter: function(value,row,index) {
+                                    if (row.submitStudent){
+                                        return row.submitStudent.name;
+                                    } else {
+                                        return value;
+                                    }
+                                }
+                            },
+                            {
+                                field: 'executePlan',
+                                title: '审批阶段',
+                                width: '22%',
+                                align: 'center',
+                                formatter: function(value,row,index) {
+                                    if (row.executePlan){
+                                        return "<span title='" + row.executePlan.content + "'>" + row.executePlan.content + "</span>";
+                                        //return row.guideTeacher.name;
+                                    } else {
+                                        return value;
+                                    }
+                                }
+                            },
+                            {
+                                field: 'checkState',
+                                title: '审批状态',
+                                width: '14%',
+                                align: 'center',
+                                formatter: function(value,row,index) {
+                                    if(row.checkState == 0){
+                                        return '未审批';
+                                    }else{
+                                        return '已审批';
+                                    }
+                                }
+                            },
+                            {
+                                field: 'studentWord',
+                                title: '学生[留言/简介]',
+                                width: '22%',
+                                align: 'center',
+                                formatter: function(value,row,index) {
+                                    return "<span title='" + row.studentWord + "'>" + row.studentWord + "</span>";
+                                }
+                            },
+                            {
+                                field: 'submitTime',
+                                title: '提交时间',
+                                width: '20%',
+                                align: 'center'
+                            }
+                        ]
+                    ]
+                });
+                var buttonaddtool = $('#teacherjudge').datagrid('getPager');
+                buttonaddtool.pagination({
+                    buttons: [
+                        {
+                            iconCls: 'icon-save',
+                            handler: function () {
+                                var choosePaper = $('#teacherjudge').datagrid('getSelections');
+                                if(choosePaper == null || choosePaper.length == 0){
+                                    $.messager.alert('提示', '能不能先选好了要批改的论文再点我', 'warning');
+                                }else{
+                                    var getpowerurl = ipAddress + "teacherGetDownPower";
+                                    $.ajax({
+                                        type:'post',
+                                        dataType:'json',
+                                        url:getpowerurl,
+                                        beforeSend:function (request) {
+                                            request.setRequestHeader("token",localStorage.getItem("token"));
+                                        },
+                                        data:{
+                                            paperID:choosePaper[0].paperID
+                                        },
+                                        success:function (returndata) {
+                                            if(returndata.state == 1){
+                                                var showu = ipAddress+"teacherDownLoad?account="+localStorage.getItem("userAccount")+"&paperID="+choosePaper[0].paperID;
+                                                window.location.href=showu;
+                                            }else {
+                                                $.messager.show({
+                                                    title:'提示',
+                                                    msg:data.message,
+                                                    timeout:2000,
+                                                    showType:'slide'
+                                                });
+                                            }
+                                            $('#teacherjudge').datagrid('unselectAll');
+                                        },
+                                        error:function (e) {
+                                            $('#teacherjudge').datagrid('unselectAll');
+                                            errorHandle(e);
+                                        }
+                                    });
+                                }
+                            }
+                        },
+                        {
+                            iconCls: 'icon-edit',
+                            handler: function () {
+                                var selectpaper = $('#teacherjudge').datagrid('getSelections');
+                                if(selectpaper == null || selectpaper.length == 0){
+                                    $.messager.show({
+                                        title:'提示',
+                                        msg:'请先选中要评审的作品',
+                                        timeout:2000,
+                                        showType:'slide'
+                                    });
+                                }else {
+                                    $('#judgepaperteacher').dialog('open');
+                                    $('#judgepaperteacher').window('center');
+                                }
+                            }
+                        }
+                    ]
+                });
+            }
+        </script>
+    </div>
+<div id="judgepaperteacher" class="easyui-dialog" title="作品评价" data-options="iconCls:'icon-save',closed:true" style="width:400px;height:400px;padding:10px">
+    <form id="teacherjudpaper" method="post">
+        <div style="margin-bottom:20px">
+            <input id="inputjudgeword" class="easyui-textbox" name="schid" style="width:100%;height: 221px"
+                   data-options="label:'作品评价:',required:true,multiline:true">
+        </div>
+        <div style="margin-bottom:20px">
+            是否通过
+            <input id="tongguo" class="easyui-switchbutton" data-options="value:false,
+            onText:'是',
+            offText:'否',
+            onChange:function(checked){
+                $('#tongguo').switchbutton('setValue',checked);
+            }">
+        </div>
+        <div style="margin-bottom:20px;text-align: center;">
+            <a href="#" style="width: 30%" class="easyui-linkbutton" onclick="submitJudgeInformation()" data-options="iconCls:'icon-ok'">确认提交</a>
+        </div>
+    </form>
+    <script>
+        function submitJudgeInformation() {
+            $('#judgepaperteacher').window('close');
+            var contentvar = document.getElementById("inputjudgeword").value;
+            var choosevalue = document.getElementById("tongguo").value;
+            var selectpaper = $('#teacherjudge').datagrid('getSelections');
+            if(selectpaper == null || selectpaper.length== 0){
+                $.messager.show({
+                    title:'提示',
+                    msg:'请先选中要评审的作品',
+                    timeout:2000,
+                    showType:'slide'
+                });
+            }else {
+                if(contentvar == null || contentvar.trim().length == 0){
+                    $.messager.show({
+                        title:'提示',
+                        msg:'请编辑评语后提交',
+                        timeout:2000,
+                        showType:'slide'
+                    });
+                }else {
+                    var judgePaperteacherUrl = ipAddress+ "paperJudgeResult";
+                    contentvar = contentvar.trim();
+                    $.ajax({
+                        type:'post',
+                        dataType:'json',
+                        beforeSend:function (request) {
+                            request.setRequestHeader("token",localStorage.getItem("token"));
+                        },
+                        url:judgePaperteacherUrl,
+                        data:{
+                            judgeWord:contentvar,
+                            passed:choosevalue,
+                            paperID:selectpaper[0].paperID
+                        },
+                        success:function (redata) {
+                            $.messager.show({
+                                title:'提示',
+                                msg: redata.message,
+                                timeout:2000,
+                                showType:'slide'
+                            });
+                            //loadDatagridPaper(redata.jsonData.PlanID);
+                        },
+                        error:function (e) {
+                            errorHandle(e);
+                        }
+                    });
+                }
+            }
+        }
+    </script>
+</div>
+</body>
+</html>

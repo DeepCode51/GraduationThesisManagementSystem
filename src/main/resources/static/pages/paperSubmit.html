@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>菏泽学院</title>
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/icon.css">
+    <script type="text/javascript" src="easyUI/jquery.min.js"></script>
+    <script type="text/javascript" src="easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="javascript/addressIP.js"></script>
+</head>
+<script type="text/javascript">
+    function loadstudentPlanList(planurl){
+        $.ajax({
+            type:'get',
+            dataType:'json',
+            url: planurl,
+            beforeSend:function (request) {
+                request.setRequestHeader("token", localStorage.getItem("token"));
+            },
+            success:function (returndata) {
+                $('#studentplanlist').datalist({
+                    data: returndata.rows,
+                    valueField:'PlanID',
+                    textField:'content',
+                    checkbox: true,
+                    singleSelect:true,
+                    loadMsg:'^_^请稍等',
+                    emptyMsg: '啥也没有',
+                    onCheck:function (index, row) {
+                        choseplanID = row.planID;
+                        var judgeurl = ipAddress + "judgeFinishedPlan";
+                        $.ajax({
+                            type:'post',
+                            dataType:'json',
+                            url:judgeurl,
+                            beforeSend:function (request) {
+                                request.setRequestHeader("token", localStorage.getItem("token"));
+                            },
+                            data:{
+                                planID:choseplanID
+                            },
+                            success:function (checkresult) {
+                                if(checkresult.state == 2){
+                                    powerofsubmit = 1;
+                                }else{
+                                    powerofsubmit = 0;
+                                }
+                                $.messager.show({
+                                    title:'提示',
+                                    msg:checkresult.message,
+                                    timeout:1800,
+                                    showType:'slide'
+                                });
+                            },
+                            error: function (e) {
+                                powerofsubmit = 0;
+                                alert("请检查您的网络状况");
+                            }
+                        });
+                    }
+                });
+            },
+            error:function (e) {
+                errorHandle(e);
+            }
+        })
+    }
+    $(function () {
+        mysubmitplanurl = ipAddress+"studentGetPlans";
+        surl = ipAddress+"submitPaper";
+        document.getElementById("gaccount").value = localStorage.getItem("userAccount");
+        document.getElementById("gtoken").value = localStorage.getItem("token");
+        document.getElementById("paperpush").action=surl;
+        chosefile = 1;
+        choseplanID = 0;
+        loadstudentPlanList(mysubmitplanurl);
+        powerofsubmit = 0;//是否允许用户提交论文，如果powerofsubmit值为0则不允许（默认不允许），为1则允许。
+    })
+</script>
+<body class="easyui-layout">
+<div data-options="region:'west',split:false" style="width: 287px;">
+    <div id="studentplanlist" data-options="title:'论文审批流程'" class="easyui-datalist" style="width:100%;">
+    </div>
+</div>
+<div style="background-color:#DDDDDD" data-options="region:'center',title:'上传你的大作吧！',iconCls:'icon-ok'">
+    <div style="margin:0px auto;width:650px;margin-top: 6%">
+        <div class="easyui-panel" style="width:100%;max-width:600px;padding:30px 60px;margin:0 auto;">
+            <form id="paperpush" method="post" enctype="multipart/form-data">
+                <div style="margin-bottom:20px;text-align:center;">
+                    请先选择左侧任务
+                </div>
+                <input id="gplanID" type="text" name="planValue" style="visibility: hidden">
+                <input id="gaccount" type="text" name="studentAccount" style="visibility: hidden">
+                <input id="gtoken" type="text" name="token" style="visibility: hidden">
+                <div style="margin-bottom:20px">
+                    <input id="inputFiles" type="file" name="file" style="width:100%">
+                </div>
+                <div style="margin-bottom:20px">
+                    <input id="inputstudentWord" class="easyui-textbox" name="studentWord" prompt="600字以内:" style="width:100%;height:210px;" data-options="label:'作品介绍:',required:true,multiline:true">
+                </div>
+                <div style="margin-bottom:20px;text-align:center;">
+                    <a id="btn" href="#" style="width: 30%" class="easyui-linkbutton" onclick="submitThisFile()" data-options="iconCls:'icon-ok'">点击提交</a>
+                </div>
+                <script>
+                    function submitThisFile() {
+                        $('#btn').linkbutton('disable');
+                        if(powerofsubmit == 1){
+                            $('#paperpush').form('submit', {
+                                url:surl,
+                                success:function(data){
+                                    $('#btn').linkbutton('enable');
+                                    $.messager.show({
+                                        title:'提示',
+                                        msg:data,
+                                        timeout:1800,
+                                        showType:'slide'
+                                    });
+                                }
+                            });
+                        }else {
+                            $('#btn').linkbutton('enable');
+                            if(localStorage.getItem("checked") == "yes"){
+                                $.messager.show({
+                                    title:'提示',
+                                    msg:'提交作品请先勾选左侧审批流程，若教师尚未加入审批流程，请提醒您的指导教师',
+                                    timeout:3000,
+                                    showType:'slide'
+                                });
+                            }else{
+                                $.messager.show({
+                                    title:'提示',
+                                    msg:'您尚未选题，请先选题再提交',
+                                    timeout:1800,
+                                    showType:'slide'
+                                });
+                            }
+                        }
+                        $('#studentplanlist').datalist("uncheckAll");
+                    }
+                </script>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

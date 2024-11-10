@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>菏泽学院</title>
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/icon.css">
+    <script type="text/javascript" src="easyUI/jquery.min.js"></script>
+    <script type="text/javascript" src="easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="javascript/addressIP.js"></script>
+</head>
+<body>
+
+<div id = 'firstlay' class="easyui-layout" style="width:100%;" data-options="fit:true">
+    <div data-options="region:'north'" style="height:34px">
+        <div id="hed" style="float: left; margin-top: 1px;"></div>
+        <div style="float: right; margin-top: 1px;"><a href="javascript:void(0)" class="easyui-linkbutton" onclick="tuichu()">退出登录</a></div>
+        <script type="application/javascript">
+            function tuichu() {
+                sessionStorage.clear();
+                localStorage.clear();
+                location.href = "login.html";
+            }
+        </script>
+        <script type="application/javascript">
+            $('#upload').dialog('open');
+        </script>
+    </div>
+    <div data-options="region:'west'" title="流程管理" style="width:120px;">
+        <div id="sm" class="easyui-sidemenu" style="width: 100%;"  data-options="data:data, onSelect:select"></div>
+        <script type="text/javascript">
+            var data = [{
+                text: '论文选题',
+                state: 'open',
+                children: [{
+                    text: '选题展示',
+                    urlvalue:'<iframe width="100%" height="100%" marginheight="0px" marginwidth="0px" scrolling="auto" frameborder="0" src="studentPublicTitle.html"></iframe>'
+                },{
+                    text: '教师简介',
+                    urlvalue: '<iframe width="100%" height="100%" marginheight="0px" marginwidth="0px" scrolling="auto" frameborder="0" src="studentFindTeachers.html"></iframe>'
+                }]
+            },{
+                text: '提交审阅',
+                state: 'open',
+                children: [{
+                    text: '论文提交',
+                    urlvalue: '<iframe width="100%" height="100%" marginheight="0px" marginwidth="0px" scrolling="auto" frameborder="0" src="paperSubmit.html"></iframe>'
+                },{
+                    text: '评审记录',
+                    urlvalue: '<iframe width="100%" height="100%" marginheight="0px" marginwidth="0px" scrolling="auto" frameborder="0" src="studentJudgeRecord.html"></iframe>'
+                }]
+            },{
+                text: '个人空间',
+                state: 'open',
+                children: [{
+                    text: '我的信息',
+                    urlvalue: '<iframe width="100%" height="100%" marginheight="0px" marginwidth="0px" scrolling="auto" frameborder="0" src="studentSelfInformation.html"></iframe>'
+                }]
+            }];
+            function select(item){
+                if ($("#tabs").tabs('exists', item.text)) {
+                    $('#tabs').tabs('select', item.text);
+                } else {
+                    $('#tabs').tabs('add',{
+                        title:item.text,
+                        content:item.urlvalue,
+                        closable:true
+                    });
+                }
+            }
+            function toggle(){
+                var opts = $('#sm').sidemenu('options');
+                $('#sm').sidemenu(opts.collapsed ? 'expand' : 'collapse');
+                opts = $('#sm').sidemenu('options');
+                $('#sm').sidemenu('resize', {
+                    width: opts.collapsed ? 60 : 200
+                })
+            }
+        </script>
+    </div>
+    <div data-options="region:'center'">
+        <div id="tabs" class="easyui-tabs">
+            <div title="学生使用指南" style="padding:20px;">
+                <div style="width: 85%;align-content: center">
+                    <img src="/pages/image/xuentizhanshi.png" width="100%" style="align-content: center">
+                    <img src="/pages/image/jiaoshijianjie.png" width="100%" style="align-content: center">
+                    <img src="/pages/image/lunwentijiao.png" width="100%" style="align-content: center">
+                    <img src="/pages/image/pingshenjilu.png" width="100%" style="align-content: center">
+                    <img src="/pages/image/wodexinxi.png" width="100%" style="align-content: center">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    $(function() {
+        userentity = {};
+        var urlstart = ipAddress + "start";
+        var accountss = localStorage.getItem("userAccount");
+        $.ajax({
+            type: 'get',
+            dataType: 'json',
+            url: urlstart,
+            beforeSend: function(request) {
+                request.setRequestHeader("token", localStorage.getItem("token"));
+            },
+            success: function (node) {
+                if(node.state == 1){
+                    userentity = node.jsonData;
+                    localStorage.setItem("userEntity",JSON.stringify(userentity));
+                    var infm = node.message;
+                    var ksk = localStorage.getItem("identity");
+                    var ident = "同学";
+                    if(ksk == 1){
+                        ident = "老师";
+                    }
+                    document.getElementById('hed').innerHTML = "<b>欢迎使用，" + infm +" "+ident+"</b>";
+                }
+            },
+            error: function (e) {
+                errorHandle(e);
+            }
+        });
+        $('#tabs').tabs({
+            fit: true,
+            border: false
+        });
+        $.ajax({
+            type: 'post',
+            dataType: 'json',
+            url: ipAddress + "getCheckState",
+            beforeSend: function (request) {
+                request.setRequestHeader("token", localStorage.getItem("token"));
+            },
+            success: function (resultdata) {
+                if(resultdata.state == 2){
+                    localStorage.setItem("checked","no");
+                }else if(resultdata.state == 1){
+                    localStorage.setItem("checked","yes");
+                    localStorage.setItem("selfTitle",JSON.stringify(resultdata.jsonData));
+                }else{
+                    alert("发生异常，请联系开发人员");
+                }
+            },
+            error: function (e) {
+                errorHandle(e);
+            }
+        });
+    });
+</script>
+</html>

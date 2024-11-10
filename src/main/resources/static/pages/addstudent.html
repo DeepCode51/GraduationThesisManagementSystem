@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>学生注册</title>
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/default/easyui.css">
+    <link rel="stylesheet" type="text/css" href="easyUI/themes/icon.css">
+    <script type="text/javascript" src="easyUI/jquery.min.js"></script>
+    <script type="text/javascript" src="easyUI/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="javascript/addressIP.js"></script>
+    <script>
+        registorurl = ipAddress + "registerStudent";
+    </script>
+</head>
+<body style="text-align:center; background-color:#B7D2FF">
+<h2 align="center">用户注册</h2>
+<div style="margin:20px 0;"></div>
+<div style="margin:0px auto;width:430px">
+    <div class="easyui-panel" title="完善个人信息" style="width:100%;max-width:400px;padding:30px 60px;">
+        <form id="ff" class="easyui-form" data-options="novalidate:true">
+            <div style="margin-bottom:20px">
+                <input id="inputaccount" class="easyui-textbox" name="schid" prompt="长度5-15位数字和字母:" style="width:100%"
+                       data-options="label:'您的账号:',required:true">
+            </div>
+            <div style="margin-bottom:20px">
+                <input id="inputpassword" class="easyui-passwordbox" name="password" prompt="密码应6-20位:"
+                       style="width:100%" data-options="label:'输入密码:',required:true">
+            </div>
+            <div style="margin-bottom:20px">
+                <input id="inputpassword2" class="easyui-passwordbox" name="password2" style="width:100%"
+                       data-options="label:'确认密码:',required:true">
+            </div>
+            <div style="margin-bottom:20px">
+                <input id="inputname" class="easyui-textbox" name="name" prompt="请输入您的真实姓名:" style="width:100%"
+                       data-options="label:'您的姓名:',required:true">
+            </div>
+            <div style="margin-bottom:20px">
+                <input id="inputemail" class="easyui-textbox" name="email" style="width:100%"
+                       data-options="label:'E-Mail:',required:true,validType:'email'">
+            </div>
+            <div style="margin-bottom:20px">
+                <input id="inputphone" class="easyui-numberbox" name="phone" style="width:100%"
+                       data-options="label:'手机号:',required:true">
+            </div>
+            <div style="margin-bottom:20px">
+                <select id="inputdepart" class="easyui-combobox" data-options="editable:false" prompt="选择院系" name="depart" style="width:100%;">
+                    <option value="0"></option>
+                    <option value=1>计算机学院</option>
+                    <option value=2>城市建设学院</option>
+                    <option value=3>数学与统计学院</option>
+                    <option value=4>化学化工学院</option>
+                    <option value=5>人文与新闻传播学院</option>
+                    <option value=6>教师教育学院</option>
+                    <option value=7>物理与电子信息工程学院</option>
+                    <option value=8>外国语学院</option>
+                    <option value=9>机电工程学院</option>
+                    <option value=10>音乐与舞蹈学院</option>
+                    <option value=11>美术与设计学院</option>
+                    <option value=12>生物工程学院</option>
+                    <option value=13>政法学院</option>
+                    <option value=14>体育与健康学院</option>
+                    <option value=15>牡丹学院</option>
+                    <option value=16>药学院</option>
+                </select>
+            </div>
+            <div style="margin-bottom:20px">
+                <input id="inputprefess" data-options="label:'选择专业:',editable:false" style="width: 100%;" prompt="选择专业:" class="easyui-combobox">
+            </div>
+        </form>
+        <div style="text-align:center;padding:5px 0">
+            <a id="submitform" href="javascript:void(0)" class="easyui-linkbutton" onclick="submitForm()"
+               style="width:80px">开始注册</a>
+            <a href="javascript:void(0)" class="easyui-linkbutton" onclick="clearForm()" style="width:80px">Clear</a>
+        </div>
+    </div>
+</div>
+<script>
+
+    $(function () {
+        prefessvalue = 0;
+        getsecuritycode = ipAddress + "getsecuritycode";
+        checksecuritycode = ipAddress + "checksecuritycode";
+        professurl = ipAddress + "getprofess";
+        $('#inputprefess').combobox('disable');
+        professentity = [];
+        jsoninf = {};
+    });
+    $('#inputdepart').combobox({
+        label:'院系:',
+        required:true,
+        limitToList: true,
+        onChange: function (newdata,olddata) {
+            $.ajax({
+                type: 'post',
+                dataType: 'json',
+                url: professurl,
+                data: {
+                    departID:newdata
+                },
+                success: function (nodelist) {
+                    professentity = nodelist.rows;
+                    $('#inputprefess').combobox({
+                        valueField: 'id',
+                        textField: 'professname',
+                        limitToList: true,
+                        data:professentity,
+                        onSelect: function(rec){
+                            prefessvalue = rec.id;
+                        }
+                    });
+                    $("#inputprefess").combobox('reload');
+                    $('#inputprefess').combobox('enable');
+                },
+                error: function (e) {
+                    errorHandle(e);
+                }
+            });
+        }
+    });
+
+    function submitForm() {
+        $('#submitform').linkbutton({disabled:true});
+        $('#ff').form('submit', {
+            onSubmit: function () {
+                var flag = 0;
+                var departvalue = document.getElementById("inputdepart").value;
+                var emailvalue = document.getElementById("inputemail").value;
+                var namevalue = document.getElementById("inputname").value;
+                var accountvalue = document.getElementById("inputaccount").value;
+                var passwordvalue = document.getElementById("inputpassword").value;
+                var passwordvalue2 = document.getElementById("inputpassword2").value;
+                var phonevalue = document.getElementById("inputphone").value;
+                prefessvalue = 0;
+                prefessvalue = document.getElementById("inputprefess").value;
+                if (namevalue == null || namevalue.length == 0 || phonevalue == null || phonevalue.length == 0 || prefessvalue == null || prefessvalue <1 || departvalue == null || departvalue == 0 || passwordvalue == null || passwordvalue.trim() == '' || passwordvalue2 == null || passwordvalue2.trim() == '' || accountvalue == null || accountvalue.trim() == '' || emailvalue == null || emailvalue.trim() == '') {
+                    flag = 1;
+                    $.messager.confirm('警告', '请输入完整信息！', function (r) {
+                        $('#submitform').linkbutton({disabled:false});
+                    });
+                }
+                if (flag == 0 && (passwordvalue.trim().length<6 || passwordvalue.trim().length>20)) {
+                    flag = 1;
+                    $.messager.confirm('警告', '请输入有效密码！', function (r) {
+                        $('#submitform').linkbutton({disabled:false});
+                    });
+                }
+                if (flag == 0 && passwordvalue.trim() != passwordvalue2.trim()) {
+                    flag = 1;
+                    $.messager.confirm('警告', '您的密码不一致！', function (r) {
+                        $('#submitform').linkbutton({disabled:false});
+                    });
+                }
+                if (flag == 0) {
+                    $.ajax({
+                        type: 'post',
+                        dataType: 'json',
+                        url: getsecuritycode,
+                        data: {
+                            email: emailvalue,
+                            account: accountvalue
+                        },
+                        success: function (data) {
+                            if(data.state == 1){
+                                jsoninf = data.message;
+                                $('#dlg').dialog('open');
+                                $('#dlg').window('center');
+                                localStorage.setItem('userAccount', accountvalue);
+                            }else{
+                                $('#submitform').linkbutton({disabled:false});
+                                $.messager.show({
+                                    title:'提示',
+                                    msg:data.message,
+                                    timeout:1600,
+                                    showType:'slide'
+                                });
+                            }
+                        },
+                        error: function (e) {
+                            $('#submitform').linkbutton({disabled:false});
+                            errorHandle(e);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    function clearForm() {
+        $('#ff').form('clear');
+    }
+</script>
+
+<div id="dlg" class="easyui-dialog" title="请输入发送到邮箱的验证码" data-options="iconCls:'icon-tip',closed:true"
+     style="width:300px;height:180px;padding:10px">
+    <form id="dow" action="">
+        <div style="margin-bottom:20px">
+            <input id="submitcheckcode" name="securitymail" class="easyui-textbox" label="" labelPosition="top"
+                   data-options="prompt:'请输入邮箱验证码'" style="width:100%;">
+        </div>
+        <br>
+        <div style="text-align:center;padding:5px 0">
+            <a id="submitcode" href="javascript:void(0)" onclick="submitcheckcode()" class="easyui-linkbutton"
+               style="width:80px" data-options="toggle:true">提交</a>
+        </div>
+    </form>
+    <script>
+        function submitcheckcode() {
+            $('#submitcode').linkbutton({disabled:true});
+            var code = document.getElementById("submitcheckcode").value;
+            var accountva = sessionStorage.getItem('userAccount');
+            var departvalue = document.getElementById("inputdepart").value;
+            var emailvalue = document.getElementById("inputemail").value;
+            var namevalue = document.getElementById("inputname").value;
+            var accountvalue = document.getElementById("inputaccount").value;
+            var passwordvalue = document.getElementById("inputpassword").value;
+            var phonevalue = document.getElementById("inputphone").value;
+            var prefessvalue = document.getElementById("inputprefess").value;
+            var checkresult = 0;
+            if (checkresult == 0) {
+                $.ajax({
+                    type: 'post',
+                    dataType: 'json',
+                    url: registorurl,
+                    data: {
+                        studentNumber: accountvalue,
+                        password: passwordvalue,
+                        email: emailvalue,
+                        phoneNumber: phonevalue,
+                        name: namevalue,
+                        departid: departvalue,
+                        securitycode: code,
+                        professid:prefessvalue
+                    },
+                    success: function (data) {
+                        $('#submitform').linkbutton({disabled:false});
+                        $('#submitcode').linkbutton({disabled:false});
+                        if (data.state == 1) {
+                            localStorage.setItem("token", data.jsonData.token);
+                            localStorage.setItem("identity", data.jsonData.identity);
+                            location.href = "studenthomepage.html";
+                        } else {
+                            $.messager.alert('提示', data.message,'info',twoInput());
+                        }
+                    },
+                    error: function (e) {
+                        $('#submitform').linkbutton({disabled:false});
+                        $('#submitcode').linkbutton({disabled:false});
+                        errorHandle(e);
+                    }
+                });
+            }else {
+                $('#submitform').linkbutton({disabled:false});
+                $('#submitcode').linkbutton({disabled:false});
+            }
+        }
+
+        function twoInput() {
+            $('#dlg').dialog('close');
+        }
+    </script>
+</div>
+</body>
+</html>
